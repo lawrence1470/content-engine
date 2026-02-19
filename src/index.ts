@@ -1,19 +1,17 @@
 import "dotenv/config";
 import express from "express";
+import { loadConfig } from "./config/env";
 import webhookRouter from "./routes/webhook";
-import { startScheduler } from "./scheduler/cron";
+
+const config = loadConfig();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 
-// Routes
 app.get("/health", (_req, res) => res.json({ status: "ok" }));
 app.use("/webhook", webhookRouter);
 
-// Start
-app.listen(PORT, () => {
-  console.log(`Content Engine running on port ${PORT}`);
-  startScheduler();
+app.listen(config.PORT, () => {
+  console.log(`Content Engine running on port ${config.PORT}`);
 });

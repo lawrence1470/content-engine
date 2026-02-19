@@ -1,33 +1,37 @@
 import { Router, Request, Response } from "express";
-import { WebhookPayload } from "../types";
-import {
-  getBlogPost,
-  updateBlogPostStatus,
-  getTemplates,
-  createAsset,
-} from "../services/notion";
-import { generateContent } from "../services/openai";
+import { z } from "zod";
+import { getBlogPost, updateBlogPostStatus } from "../services/notion";
+import { createAssetsForBlog } from "../services/assetOrchestrator";
+import { getConfig } from "../config/env";
 
 const router = Router();
 
+const webhookBodySchema = z.object({
+  source: z.object({ type: z.string() }),
+  data: z.object({
+    id: z.string().min(1, "page id is required"),
+  }),
+});
+
 router.post("/generate", async (req: Request, res: Response) => {
   try {
-    // Verify webhook secret
-    const secret = req.headers["x-webhook-secret"];
-    if (secret !== process.env.WEBHOOK_SECRET) {
-      return res.status(401).json({ error: "Unauthorized" });
+    console.log("Webhook body:", JSON.stringify(req.body, null, 2));
+
+    const parsed = webhookBodySchema.safeParse(req.body);
+    if (!parsed.success) {
+      console.log("Zod errors:", parsed.error.issues);
+      return res.status(400).json({
+        error: parsed.error.issues.map((i) => i.message).join(", "),
+      });
     }
 
-    const { blogPostId } = req.body as WebhookPayload;
-    if (!blogPostId) {
-      return res.status(400).json({ error: "blogPostId is required" });
-    }
+    const blogPostId = parsed.data.data.id;
 
-    // Respond immediately — do the work async
     res.status(202).json({ message: "Processing started" });
 
-    // Run generation in background
-    await runGeneration(blogPostId);
+    fetchBlog(blogPostId).catch((err) => {
+      console.error("Fetch failed:", err.message ?? err);
+    });
   } catch (err: any) {
     console.error("Webhook error:", err.message);
     if (!res.headersSent) {
@@ -36,29 +40,22 @@ router.post("/generate", async (req: Request, res: Response) => {
   }
 });
 
-async function runGeneration(blogPostId: string) {
+async function fetchBlog(blogPostId: string) {
   await updateBlogPostStatus(blogPostId, "Processing");
 
   const blogPost = await getBlogPost(blogPostId);
-  const templates = await getTemplates();
 
-  for (const template of templates) {
-    const content = await generateContent(template, {
-      blog_content: blogPost.content,
-      title: blogPost.title,
-    });
+  console.log(`Fetched: "${blogPost.title}"`);
 
-    await createAsset({
-      title: `${blogPost.title} — ${template.platform}`,
-      platform: template.platform === "X" ? "X Thread" : "Substack Note",
-      content,
-      sourceBlogPostId: blogPostId,
-      status: "Draft",
-    });
-  }
+  const assets = await createAssetsForBlog(blogPostId, blogPost.title);
+  console.log(`Assets created:`, {
+    x: assets.x.id,
+    youtube: assets.youtube.id,
+    substack: assets.substack.id,
+  });
 
   await updateBlogPostStatus(blogPostId, "Done");
-  console.log(`Generation complete for: ${blogPost.title}`);
+  console.log(`Done: "${blogPost.title}"`);
 }
 
 export default router;
