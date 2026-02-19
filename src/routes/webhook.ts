@@ -48,11 +48,10 @@ async function fetchBlog(blogPostId: string) {
   console.log(`Fetched: "${blogPost.title}"`);
 
   const assets = await createAssetsForBlog(blogPost);
-  console.log(`Assets created:`, {
-    x: assets.x.id,
-    youtube: assets.youtube.id,
-    substack: assets.substack.id,
-  });
+  const created = Object.entries(assets)
+    .filter(([, a]) => a)
+    .map(([key, a]) => [key, a!.id]);
+  console.log(`Assets created:`, Object.fromEntries(created));
 
   await updateBlogPostStatus(blogPostId, "Done");
   console.log(`Done: "${blogPost.title}"`);

@@ -5,6 +5,7 @@ const envSchema = z.object({
   NOTION_API_KEY: z.string().min(1, "NOTION_API_KEY is required"),
   BLOG_POSTS_DB_ID: z.string().min(1, "BLOG_POSTS_DB_ID is required"),
   ASSETS_DB_ID: z.string().min(1, "ASSETS_DB_ID is required"),
+  FRAMEWORKS_DB_ID: z.string().min(1, "FRAMEWORKS_DB_ID is required"),
   WEBHOOK_SECRET: z.string().min(1, "WEBHOOK_SECRET is required"),
 });
 

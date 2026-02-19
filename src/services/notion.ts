@@ -49,6 +49,15 @@ export async function getBlogPost(pageId: string): Promise<BlogPost> {
   return { id: pageId, title, content, status };
 }
 
+/** Split text into ≤2000 char chunks for Notion rich_text limits */
+function chunkText(text: string, size = 2000): string[] {
+  const chunks: string[] = [];
+  for (let i = 0; i < text.length; i += size) {
+    chunks.push(text.slice(i, i + size));
+  }
+  return chunks;
+}
+
 /** Create a single asset row in the Assets database */
 export async function createAssetPage(config: AssetConfig): Promise<Asset> {
   const response = await notion.pages.create({
@@ -60,7 +69,11 @@ export async function createAssetPage(config: AssetConfig): Promise<Asset> {
       Status: { select: { name: "Pending Review" } },
       Blogs: { relation: [{ id: config.blogPostId }] },
       ...(config.content && {
-        Content: { rich_text: [{ text: { content: config.content } }] },
+        Content: {
+          rich_text: chunkText(config.content).map((chunk) => ({
+            text: { content: chunk },
+          })),
+        },
       }),
     },
   }) as any;
