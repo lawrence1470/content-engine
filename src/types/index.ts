@@ -1,5 +1,3 @@
-// --- Notion Database Row Types ---
-
 export interface BlogPost {
   id: string;
   title: string;
@@ -7,28 +5,42 @@ export interface BlogPost {
   status: "Draft" | "Ready" | "Processing" | "Done";
 }
 
-export interface Template {
-  id: string;
+export interface WebhookPayload {
+  blogPostId: string;
+}
+
+export type Platform = "X" | "YouTube" | "Substack";
+export type AssetType = "Thread" | "Short" | "Note";
+export type AssetStatus = "Pending Review" | "In Review" | "Approved" | "Published";
+
+export interface AssetConfig {
   name: string;
-  platform: "X" | "Substack";
-  promptTemplate: string; // contains {{blog_content}}, {{title}}, etc.
-  maxLength?: number;
+  platform: Platform;
+  type: AssetType;
+  blogPostId: string;
+  content?: string;
 }
 
 export interface Asset {
-  id?: string;
-  title: string;
-  platform: "X Thread" | "Substack Note";
-  content: string;
-  sourceBlogPostId: string;
-  status: "Draft" | "Approved" | "Scheduled" | "Published" | "Failed";
-  scheduledDate?: string; // ISO date string
-  publishedUrl?: string;
-  errorLog?: string;
+  id: string;
+  name: string;
+  platform: Platform;
+  type: AssetType;
+  status: AssetStatus;
+  blogPostId: string;
 }
 
-// --- Webhook Payload ---
+export type FrameworkPlatform = "X Thread" | "Substack Note";
 
-export interface WebhookPayload {
-  blogPostId: string;
+export interface Framework {
+  id: string;
+  name: string;
+  platform: FrameworkPlatform;
+  template: string;
+}
+
+export interface FrameworkMap {
+  x: Framework | null;
+  youtube: Framework | null;
+  substack: Framework | null;
 }
