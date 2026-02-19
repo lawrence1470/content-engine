@@ -47,7 +47,7 @@ async function fetchBlog(blogPostId: string) {
 
   console.log(`Fetched: "${blogPost.title}"`);
 
-  const assets = await createAssetsForBlog(blogPostId, blogPost.title);
+  const assets = await createAssetsForBlog(blogPost);
   console.log(`Assets created:`, {
     x: assets.x.id,
     youtube: assets.youtube.id,

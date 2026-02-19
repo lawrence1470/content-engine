@@ -1,5 +1,5 @@
 import { Client } from "@notionhq/client";
-import { BlogPost, AssetConfig, Asset } from "../types";
+import { BlogPost, AssetConfig, Asset, Framework, FrameworkMap } from "../types";
 import { getConfig } from "../config/env";
 
 const notion = new Client({ auth: process.env.NOTION_API_KEY });
@@ -59,6 +59,9 @@ export async function createAssetPage(config: AssetConfig): Promise<Asset> {
       Type: { select: { name: config.type } },
       Status: { select: { name: "Pending Review" } },
       Blogs: { relation: [{ id: config.blogPostId }] },
+      ...(config.content && {
+        Content: { rich_text: [{ text: { content: config.content } }] },
+      }),
     },
   }) as any;
 
@@ -70,6 +73,39 @@ export async function createAssetPage(config: AssetConfig): Promise<Asset> {
     status: "Pending Review",
     blogPostId: config.blogPostId,
   };
+}
+
+/** Fetch active frameworks from the Frameworks database, keyed by platform */
+export async function getFrameworksByPlatform(): Promise<FrameworkMap> {
+  const response = await notion.databases.query({
+    database_id: getConfig().FRAMEWORKS_DB_ID,
+    filter: { property: "Active", checkbox: { equals: true } },
+  });
+
+  const map: FrameworkMap = { x: null, youtube: null, substack: null };
+
+  for (const page of response.results) {
+    const f = parseFramework(page as any);
+    if (!f) continue;
+    if (f.platform === "X Thread") map.x = f;
+    else if (f.platform === "Substack Note") map.substack = f;
+  }
+
+  return map;
+}
+
+function parseFramework(page: any): Framework | null {
+  try {
+    const props = page.properties;
+    return {
+      id: page.id,
+      name: extractRichText(props.Name?.title ?? []),
+      platform: props.Platform?.select?.name,
+      template: extractRichText(props.Template?.rich_text ?? []),
+    };
+  } catch {
+    return null;
+  }
 }
 
 /** Update the status of a blog post */

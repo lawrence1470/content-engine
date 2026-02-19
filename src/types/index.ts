@@ -18,6 +18,7 @@ export interface AssetConfig {
   platform: Platform;
   type: AssetType;
   blogPostId: string;
+  content?: string;
 }
 
 export interface Asset {
@@ -27,4 +28,19 @@ export interface Asset {
   type: AssetType;
   status: AssetStatus;
   blogPostId: string;
+}
+
+export type FrameworkPlatform = "X Thread" | "Substack Note";
+
+export interface Framework {
+  id: string;
+  name: string;
+  platform: FrameworkPlatform;
+  template: string;
+}
+
+export interface FrameworkMap {
+  x: Framework | null;
+  youtube: Framework | null;
+  substack: Framework | null;
 }

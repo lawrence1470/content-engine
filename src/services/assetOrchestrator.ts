@@ -1,7 +1,8 @@
 import { createXAsset } from "./platforms/x";
 import { createYouTubeAsset } from "./platforms/youtube";
 import { createSubstackAsset } from "./platforms/substack";
-import { Asset } from "../types";
+import { getFrameworksByPlatform } from "./notion";
+import { Asset, BlogPost } from "../types";
 
 export interface AssetCreationResult {
   x: Asset;
@@ -11,13 +12,14 @@ export interface AssetCreationResult {
 
 /** Creates one asset row per platform for the given blog post (runs in parallel) */
 export async function createAssetsForBlog(
-  blogPostId: string,
-  blogTitle: string
+  blogPost: BlogPost
 ): Promise<AssetCreationResult> {
+  const frameworks = await getFrameworksByPlatform();
+
   const [x, youtube, substack] = await Promise.all([
-    createXAsset(blogPostId, blogTitle),
-    createYouTubeAsset(blogPostId, blogTitle),
-    createSubstackAsset(blogPostId, blogTitle),
+    createXAsset(blogPost, frameworks.x),
+    createYouTubeAsset(blogPost, frameworks.youtube),
+    createSubstackAsset(blogPost, frameworks.substack),
   ]);
 
   return { x, youtube, substack };
